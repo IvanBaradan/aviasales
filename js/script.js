@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы DOM
     const searchBtn = document.getElementById('search-btn');
     const clearBtn = document.getElementById('clear-btn');
     const loading = document.getElementById('loading');
@@ -10,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
 
-    // Очистка формы
+
     clearBtn.addEventListener('click', function() {
         document.getElementById('from').value = '';
         document.getElementById('to').value = '';
@@ -20,26 +19,22 @@ document.addEventListener('DOMContentLoaded', function() {
         errorMessage.style.display = 'none';
     });
 
-    // Поиск рейсов
     searchBtn.addEventListener('click', async function() {
         const from = document.getElementById('from').value.trim();
         const to = document.getElementById('to').value.trim();
         const departure = document.getElementById('departure').value;
         const returnDate = document.getElementById('return').value;
-        
-        // Валидация
+
         if (!from || !to || !departure) {
             showError('Пожалуйста, заполните обязательные поля: Откуда, Куда и Дата вылета');
             return;
         }
-        
-        // Показываем индикатор загрузки
+
         loading.style.display = 'flex';
         results.innerHTML = '';
         errorMessage.style.display = 'none';
         
         try {
-            // Имитация запроса к API с задержкой
             const mockData = await mockApiRequest(from, to, departure, returnDate);
             displayResults(mockData);
         } catch (error) {
@@ -49,8 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loading.style.display = 'none';
         }
     });
-    
-    // Функция для имитации запроса к API
     function mockApiRequest(from, to, departureDate, returnDate) {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -59,13 +52,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Показать ошибку
     function showError(message) {
         errorMessage.textContent = message;
         errorMessage.style.display = 'block';
     }
-    
-    // Отображение результатов
+
     function displayResults(flights) {
         if (flights.length === 0) {
             results.innerHTML = `
@@ -120,8 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             results.appendChild(flightCard);
         });
-        
-        // Добавляем обработчики для кнопок "Подробнее"
         document.querySelectorAll('.view-details-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -130,8 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 showFlightDetails(flight);
             });
         });
-        
-        // Добавляем обработчики для карточек рейсов
         document.querySelectorAll('.flight-card').forEach(card => {
             card.addEventListener('click', function() {
                 const flightId = this.dataset.id;
@@ -140,8 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
-    // Показать детали рейса в модальном окне
+
     function showFlightDetails(flight) {
         modalTitle.textContent = `Рейс ${flight.flightNumber}`;
         
@@ -204,8 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         flightModal.classList.add('show');
     }
-    
-    // Закрытие модального окна
     closeModal.addEventListener('click', function() {
         flightModal.classList.remove('show');
     });
@@ -215,8 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
             flightModal.classList.remove('show');
         }
     });
-    
-    // Генерация mock данных
     function generateMockFlights(from, to, departureDate, returnDate) {
         const airlines = [
             { name: 'Аэрофлот', logo: 'SU' },
@@ -233,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const durations = ['1ч 30м', '2ч 15м', '3ч', '1ч 45м', '2ч 30м'];
         
         const flights = [];
-        const count = Math.floor(Math.random() * 4) + 3; // 3-6 рейсов
+        const count = Math.floor(Math.random() * 4) + 3; 
         
         for (let i = 0; i < count; i++) {
             const airline = airlines[Math.floor(Math.random() * airlines.length)];
@@ -259,12 +241,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 returnDate: returnDate ? formatDate(returnDate) : null
             });
         }
-        
-        // Сортируем по цене
+
         return flights.sort((a, b) => a.price - b.price);
     }
-    
-    // Вспомогательные функции
+
     function generateId() {
         return Math.random().toString(36).substr(2, 9);
     }
