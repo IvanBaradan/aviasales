@@ -1,205 +1,225 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Конфигурация
-  const API_KEY = '0a855af76389d62285add478eefd38e9';
-  
-  // Элементы DOM
-  const fromInput = document.getElementById('from');
-  const toInput = document.getElementById('to');
-  const departureInput = document.getElementById('departure');
-  const searchBtn = document.getElementById('search-btn');
-  const errorDiv = document.getElementById('error-message');
-  const resultsDiv = document.getElementById('results');
-  const loadingDiv = document.getElementById('loading');
+    // Элементы DOM
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const departureInput = document.getElementById('departure');
+    const searchBtn = document.getElementById('search-btn');
+    const errorDiv = document.getElementById('error-message');
+    const resultsDiv = document.getElementById('results');
+    const loadingDiv = document.getElementById('loading');
+    const resultsCount = document.getElementById('results-count');
 
-  // Установка даты по умолчанию (через 7 дней)
-  const defaultDate = new Date();
-  defaultDate.setDate(defaultDate.getDate() + 7);
-  departureInput.valueAsDate = defaultDate;
+    // Установка даты по умолчанию (через 7 дней)
+    const today = new Date();
+    today.setDate(today.getDate() + 7);
+    departureInput.valueAsDate = today;
 
-  // Мок-данные для демонстрации
-  const getMockFlights = (from, to, date) => {
-    const baseDate = new Date(date);
-    return [
-      {
-        airline: 'Aeroflot',
-        price: 5600 + Math.floor(Math.random() * 2000),
-        departure_at: new Date(baseDate.setHours(8, 0, 0)).toISOString(),
-        return_at: new Date(baseDate.setHours(10, 30, 0)).toISOString(),
-        origin: from,
-        destination: to,
-        transfers: 0
-      },
-      {
-        airline: 'S7 Airlines',
-        price: 4800 + Math.floor(Math.random() * 2000),
-        departure_at: new Date(baseDate.setHours(12, 15, 0)).toISOString(),
-        return_at: new Date(baseDate.setHours(14, 45, 0)).toISOString(),
-        origin: from,
-        destination: to,
-        transfers: 0
-      }
-    ];
-  };
+    // Словарь для преобразования кодов авиакомпаний в названия
+    const airlineNames = {
+        "UT": "UTair",
+        "SU": "Aeroflot",
+        "S7": "S7 Airlines",
+        "U6": "Ural Airlines",
+        "DP": "Pobeda Airlines",
+        "FV": "Rossiya Airlines",
+        "D2": "Severstal Air"
+    };
 
-  // Основная функция поиска
-  const searchFlights = async () => {
-    const from = fromInput.value.trim().toUpperCase();
-    const to = toInput.value.trim().toUpperCase();
-    const date = departureInput.value;
+    // Основная функция поиска
+    const searchFlights = async () => {
+        const from = fromInput.value.trim().toUpperCase();
+        const to = toInput.value.trim().toUpperCase();
+        const date = departureInput.value;
 
-    // Валидация
-    if (!from || !to) {
-      showError('Укажите города отправления и назначения');
-      return;
-    }
-
-    loadingDiv.style.display = 'flex';
-    resultsDiv.innerHTML = '';
-    errorDiv.style.display = 'none';
-
-    try {
-      // 1. Пытаемся получить реальные данные
-      let flights = await tryFetchRealData(from, to, date);
-      
-      // 2. Если не получилось, используем мок-данные
-      if (!flights) {
-        flights = getMockFlights(from, to, date);
-        showWarning('Используются демонстрационные данные');
-      }
-      
-      displayResults(flights, from, to);
-    } catch (error) {
-      console.error('Ошибка:', error);
-      // 3. При любой ошибке показываем мок-данные
-      const flights = getMockFlights(from, to, date);
-      displayResults(flights, from, to);
-      showError('Ошибка соединения. Показаны демонстрационные данные');
-    } finally {
-      loadingDiv.style.display = 'none';
-    }
-  };
-
-  // Попытка получить реальные данные
-  const tryFetchRealData = async (from, to, date) => {
-    try {
-      // Пробуем разные прокси-серверы последовательно
-      const proxies = [
-        'https://cors-anywhere.herokuapp.com/',
-        'https://api.allorigins.win/raw?url=',
-        'https://thingproxy.freeboard.io/fetch/'
-      ];
-      
-      const apiUrl = `https://api.travelpayouts.com/aviasales/v3/prices_for_dates?origin=${from}&destination=${to}&departure_at=${date}&currency=rub&token=${API_KEY}`;
-      
-      for (const proxy of proxies) {
-        try {
-          const response = await fetch(proxy + encodeURIComponent(apiUrl), {
-            headers: {
-              'Accept': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            return data.data || [];
-          }
-        } catch (e) {
-          console.log(`Прокси ${proxy} не сработал, пробуем следующий`);
+        // Валидация
+        if (!from || !to) {
+            showError('Укажите города отправления и назначения');
+            return;
         }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Ошибка при запросе к API:', error);
-      return null;
-    }
-  };
+        
+        // Проверка формата кодов аэропортов (3 буквы)
+        if (from.length !== 3 || to.length !== 3) {
+            showError('Коды аэропортов должны состоять из 3 букв');
+            return;
+        }
+        
+        // Проверка даты (не раньше сегодняшней)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(date);
+        if (selectedDate < today) {
+            showError('Дата вылета не может быть в прошлом');
+            return;
+        }
 
-  // Отображение результатов
-  const displayResults = (flights, from, to) => {
-    resultsDiv.innerHTML = flights.map(flight => `
-      <div class="flight-card">
-        <div class="flight-header">
-          <span class="airline">${flight.airline || 'Авиакомпания'}</span>
-          <span class="price">${flight.price.toLocaleString('ru-RU')} ₽</span>
-        </div>
-        <div class="flight-details">
-          <div class="route">
-            <div class="departure">
-              <div class="time">${formatTime(flight.departure_at)}</div>
-              <div class="airport">${from}</div>
+        loadingDiv.style.display = 'flex';
+        resultsDiv.innerHTML = '';
+        errorDiv.style.display = 'none';
+        resultsCount.textContent = '';
+
+        try {
+            // Получаем реальные данные
+            const flights = await fetchFlights(from, to, date);
+            
+            if (flights.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results">Рейсов не найдено. Попробуйте другие параметры поиска.</div>';
+                resultsCount.textContent = 'Найдено: 0 рейсов';
+                return;
+            }
+            
+            displayResults(flights, from, to);
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showError('Ошибка при получении данных. Пожалуйста, попробуйте позже.');
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    };
+
+    // Функция запроса к нашему серверу
+    const fetchFlights = async (from, to, date) => {
+        try {
+            // Формируем URL для нашего сервера
+            const apiUrl = `http://localhost:5000/api/flights?origin=${from}&destination=${to}&depart_date=${date}`;
+            
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+                throw new Error('Ошибка сети');
+            }
+            
+            const data = await response.json();
+            
+            // Проверяем наличие ошибки от сервера
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Проверяем успешность ответа API
+            if (!data.success) {
+                throw new Error('API Error: ' + (data.message || 'Неизвестная ошибка'));
+            }
+            
+            // Обработка структуры ответа API
+            if (data.data && data.data[to]) {
+                const flightsForDestination = data.data[to];
+                
+                // Преобразуем объект рейсов в массив
+                const flightsArray = Object.values(flightsForDestination);
+                
+                // Фильтруем рейсы по дате вылета
+                const filteredFlights = flightsArray.filter(flight => {
+                    const departureDate = flight.departure_at.split('T')[0];
+                    return departureDate === date;
+                });
+                
+                // Преобразуем каждый рейс в нужный формат
+                return filteredFlights.map(flight => {
+                    // Преобразуем код авиакомпании в название
+                    const airlineName = airlineNames[flight.airline] || flight.airline;
+                    
+                    // Рассчитываем время прибытия (вылет + 2 часа)
+                    const departureTime = new Date(flight.departure_at);
+                    const arrivalTime = new Date(departureTime.getTime() + 2 * 60 * 60000);
+                    
+                    return {
+                        airline: airlineName,
+                        price: flight.price,
+                        departure_at: flight.departure_at,
+                        arrival_at: arrivalTime.toISOString(),
+                        origin: from,
+                        destination: to,
+                        transfers: 0
+                    };
+                });
+            }
+            return [];
+        } catch (error) {
+            console.error('Ошибка при запросе к серверу:', error);
+            throw error;
+        }
+    };
+
+    // Отображение результатов
+    const displayResults = (flights, from, to) => {
+        resultsCount.textContent = `Найдено: ${flights.length} рейсов`;
+        
+        resultsDiv.innerHTML = flights.map(flight => `
+            <div class="flight-card">
+                <div class="flight-header">
+                    <span class="airline">${flight.airline}</span>
+                    <span class="price">${flight.price.toLocaleString('ru-RU')} ₽</span>
+                </div>
+                <div class="flight-details">
+                    <div class="route">
+                        <div class="departure">
+                            <div class="time">${formatTime(flight.departure_at)}</div>
+                            <div class="airport">${from}</div>
+                        </div>
+                        <div class="duration">${calculateDuration(flight.departure_at, flight.arrival_at)}</div>
+                        <div class="arrival">
+                            <div class="time">${formatTime(flight.arrival_at)}</div>
+                            <div class="airport">${to}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flight-info">
+                    <span><i class="fas fa-calendar-alt"></i> ${formatDate(flight.departure_at)}</span>
+                    <span><i class="fas fa-chair"></i> Без пересадок</span>
+                </div>
             </div>
-            <div class="duration">${calculateDuration(flight.departure_at, flight.return_at)}</div>
-            <div class="arrival">
-              <div class="time">${formatTime(flight.return_at)}</div>
-              <div class="airport">${to}</div>
-            </div>
-          </div>
-        </div>
-        <div class="flight-info">
-          <span><i class="fas fa-calendar-alt"></i> ${formatDate(flight.departure_at)}</span>
-          <span><i class="fas fa-chair"></i> ${flight.transfers === 0 ? 'Без пересадок' : flight.transfers + ' пересадка'}</span>
-        </div>
-      </div>
-    `).join('');
-  };
+        `).join('');
+    };
 
-  // Вспомогательные функции
-  const formatTime = (dateStr) => {
-    return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  };
+    // Вспомогательные функции
+    const formatTime = (dateStr) => {
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('ru-RU', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+        });
+    };
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('ru-RU', { 
-      weekday: 'short', 
-      day: 'numeric', 
-      month: 'long' 
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        const options = { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'long'
+        };
+        return date.toLocaleDateString('ru-RU', options);
+    };
+
+    const calculateDuration = (departure, arrival) => {
+        const dep = new Date(departure);
+        const arr = new Date(arrival);
+        const diff = arr - dep;
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        return `${hours}ч ${minutes}м`;
+    };
+
+    const showError = (message) => {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    };
+
+    // Обработчики событий
+    searchBtn.addEventListener('click', searchFlights);
+
+    // Обработчики подсказок
+    document.querySelectorAll('.hint span').forEach(el => {
+        el.addEventListener('click', () => {
+            const code = el.getAttribute('data-code');
+            toInput.value = code;
+            errorDiv.style.display = 'none';
+            searchFlights();
+        });
     });
-  };
 
-  const calculateDuration = (departure, arrival) => {
-    const diff = new Date(arrival) - new Date(departure);
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}ч ${minutes}м`;
-  };
-
-  const showError = (message) => {
-    errorDiv.innerHTML = `
-      <i class="fas fa-exclamation-circle"></i> ${message}
-      <div class="error-hint">
-        Попробуйте:
-        <ul>
-          <li>Проверить интернет-соединение</li>
-          <li>Использовать коды городов (MOW, LED)</li>
-          <li>Попробовать позже</li>
-        </ul>
-      </div>
-    `;
-    errorDiv.style.display = 'block';
-  };
-
-  const showWarning = (message) => {
-    errorDiv.innerHTML = `
-      <i class="fas fa-info-circle"></i> ${message}
-    `;
-    errorDiv.style.display = 'block';
-    errorDiv.style.backgroundColor = '#fff3cd';
-    errorDiv.style.color = '#856404';
-  };
-
-  // Обработчики событий
-  searchBtn.addEventListener('click', searchFlights);
-
-  // Обработчики подсказок
-  document.querySelectorAll('.code-hint').forEach(el => {
-    el.addEventListener('click', () => {
-      toInput.value = el.getAttribute('data-code');
-      errorDiv.style.display = 'none';
-    });
-  });
-
-  // Первый поиск при загрузке
-  searchFlights();
+    // Первый поиск при загрузке
+    searchFlights();
 });

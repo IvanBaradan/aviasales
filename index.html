@@ -1,68 +1,66 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Поиск авиабилетов</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Умный поиск авиабилетов</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1><i class="fas fa-plane"></i> Поиск авиабилетов</h1>
-    </header>
-    
-    <main>
-      <section class="search-form">
-        <h2><i class="fas fa-search"></i> Расписание рейсов</h2>
-        
-        <div class="form-group">
-          <label for="from"><i class="fas fa-plane-departure"></i> Откуда</label>
-          <input type="text" id="from" placeholder="Москва (MOW)" value="MOW">
-        </div>
-        
-        <div class="form-group">
-          <label for="to"><i class="fas fa-plane-arrival"></i> Куда</label>
-          <input type="text" id="to" placeholder="Санкт-Петербург (LED)" value="LED">
-          <div class="code-hints">
-            Популярные направления: 
-            <span class="code-hint" data-code="MOW">Москва</span>, 
-            <span class="code-hint" data-code="LED">СПб</span>,
-            <span class="code-hint" data-code="SVX">Екатеринбург</span>
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="departure"><i class="fas fa-calendar-alt"></i> Дата вылета</label>
-            <input type="date" id="departure">
-          </div>
-        </div>
-        
-        <div class="error" id="error-message"></div>
-        
-        <div class="buttons">
-          <button class="btn btn-primary" id="search-btn">
-            <i class="fas fa-search"></i> НАЙТИ
-          </button>
-          <button class="btn btn-secondary" id="clear-btn">
-            <i class="fas fa-broom"></i> ОЧИСТИТЬ
-          </button>
-        </div>
-      </section>
-      
-      <section class="results-section">
-        <div class="loading" id="loading">
-          <div class="spinner"></div>
-          <p>Ищем лучшие варианты...</p>
-        </div>
-        
-        <div class="results" id="results"></div>
-      </section>
-    </main>
-  </div>
+<div class="container">
+<header>
+<h1><i class="fas fa-plane-departure"></i> Умный поиск авиабилетов</h1>
+<p>Найдите лучшие предложения для вашего путешествия</p>
+</header>
 
-  <script src="js/script.js"></script>
+<div class="search-box">
+<h2 class="search-title"><i class="fas fa-search"></i> Поиск билетов</h2>
+<div class="search-form">
+<div class="form-group">
+<label for="from"><i class="fas fa-map-marker-alt"></i> Откуда</label>
+<input type="text" id="from" placeholder="Код аэропорта (MOW)" value="MOW">
+<div class="hint">Популярные:
+<span data-code="MOW">Москва (MOW)</span>
+<span data-code="LED">СПб (LED)</span>
+<span data-code="SVX">Екат (SVX)</span>
+</div>
+</div>
+
+<div class="form-group">
+<label for="to"><i class="fas fa-map-marker-alt"></i> Куда</label>
+<input type="text" id="to" placeholder="Код аэропорта (LED)" value="LED">
+<div class="hint">Популярные:
+<span data-code="KZN">Казань (KZN)</span>
+<span data-code="GOJ">НН (GOJ)</span>
+<span data-code="ROV">Ростов (ROV)</span>
+</div>
+</div>
+
+<div class="form-group">
+<label for="departure"><i class="fas fa-calendar-day"></i> Дата вылета</label>
+<input type="date" id="departure">
+</div>
+
+<button id="search-btn" class="btn"><i class="fas fa-search"></i> Найти билеты</button>
+</div>
+
+<div id="error-message"></div>
+</div>
+
+<div id="loading" class="loading">
+<div class="loader"></div>
+</div>
+
+<div class="results-container">
+<div class="section-header">
+<h2><i class="fas fa-ticket-alt"></i> Найденные билеты</h2>
+<div id="results-count"></div>
+</div>
+<div id="results"></div>
+</div>
+</div>
+
+<script src="js/script.js"></script>
 </body>
 </html>
